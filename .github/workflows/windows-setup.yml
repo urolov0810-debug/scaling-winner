@@ -1,0 +1,99 @@
+name: Windows Setup EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows-installer:
+    name: Build and test Windows installer
+    runs-on: windows-2022
+    timeout-minutes: 55
+
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Get project files
+        uses: actions/checkout@v4
+
+      - name: Install Python on GitHub runner (not user PC)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: 'x64'
+          cache: pip
+          cache-dependency-path: requirements-build.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if ($LASTEXITCODE -ne 0) { throw 'pip upgrade failed' }
+          python -m pip install -r requirements-build.txt
+          if ($LASTEXITCODE -ne 0) { throw 'dependency install failed' }
+
+      - name: Run project tests
+        run: |
+          python -m unittest discover -s tests -v
+          if ($LASTEXITCODE -ne 0) { throw 'Python tests failed' }
+
+      - name: Build portable Windows executable
+        run: |
+          python -m PyInstaller --noconfirm --clean --windowed --onedir --name CLPT_FSDT_RK --collect-all scipy --collect-all matplotlib main.py
+          if ($LASTEXITCODE -ne 0) { throw 'PyInstaller build failed' }
+          if (-not (Test-Path 'dist/CLPT_FSDT_RK/CLPT_FSDT_RK.exe')) { throw 'EXE missing' }
+
+      - name: Test frozen executable with a small real calculation
+        run: |
+          python tests/create_smoke_config.py
+          if ($LASTEXITCODE -ne 0) { throw 'Smoke config failed' }
+          $exe = (Resolve-Path 'dist/CLPT_FSDT_RK/CLPT_FSDT_RK.exe').Path
+          $argsString = '--worker --config smoke_config.json --output smoke_results --model both'
+          $p = Start-Process -FilePath $exe -ArgumentList $argsString -Wait -PassThru
+          if ($p.ExitCode -ne 0) {
+            if (Test-Path 'smoke_results/run.log') { Get-Content 'smoke_results/run.log' -Tail 100 }
+            throw "Packaged EXE smoke test failed: exit code $($p.ExitCode)"
+          }
+          foreach ($file in @('smoke_results/fsdt/summary.json', 'smoke_results/clpt/summary.json', 'smoke_results/comparison.json')) {
+            if (-not (Test-Path $file)) { throw "Missing calculation output: $file" }
+          }
+          Write-Host 'Frozen executable passed CLPT + FSDT smoke test.'
+
+      - name: Install Inno Setup on GitHub runner
+        run: |
+          & choco install innosetup --yes --no-progress
+          if ($LASTEXITCODE -notin @(0, 3010)) { throw 'Inno Setup installation failed' }
+
+      - name: Build offline Setup.exe
+        run: |
+          $paths = @(
+            'C:\Program Files (x86)\Inno Setup 6\ISCC.exe',
+            'C:\Program Files\Inno Setup 6\ISCC.exe',
+            'C:\ProgramData\chocolatey\lib\innosetup\tools\ISCC.exe'
+          )
+          $iscc = $paths | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) { throw 'ISCC.exe not found after installing Inno Setup' }
+          & $iscc 'installer.iss'
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup compiler failed' }
+          if (-not (Test-Path 'installer_output/CLPT_FSDT_RK_Setup_Windows_x64.exe')) { throw 'Setup.exe missing' }
+
+      - name: Upload installer (download from Actions page)
+        uses: actions/upload-artifact@v4
+        with:
+          name: CLPT_FSDT_RK_Setup_Windows_x64
+          path: installer_output/CLPT_FSDT_RK_Setup_Windows_x64.exe
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload portable build (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: CLPT_FSDT_RK_Portable_Windows_x64
+          path: dist/CLPT_FSDT_RK/
+          if-no-files-found: error
+          retention-days: 30
