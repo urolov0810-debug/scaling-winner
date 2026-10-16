@@ -1,0 +1,116 @@
+{
+  "a": 0.3,
+  "b": 0.2,
+  "nx": 8,
+  "ny": 6,
+  "in_plane": "fixed",
+  "kw": 0.0,
+  "kp": 0.0,
+  "edges": {
+    "left": "simply_supported",
+    "right": "simply_supported",
+    "bottom": "simply_supported",
+    "top": "simply_supported"
+  },
+  "layers": [
+    {
+      "h": 0.0015,
+      "E1": 140000000000.0,
+      "E2": 10000000000.0,
+      "G12": 5000000000.0,
+      "G13": 5000000000.0,
+      "G23": 3000000000.0,
+      "nu12": 0.3,
+      "rho": 1600,
+      "criterion": "max_stress",
+      "strengths": {
+        "Xt": 1200000000.0,
+        "Xc": 800000000.0,
+        "Yt": 50000000.0,
+        "Yc": 150000000.0,
+        "S12": 60000000.0,
+        "S13": 50000000.0,
+        "S23": 40000000.0
+      },
+      "name": "Pastki +30",
+      "theta": 30,
+      "is_visco": true,
+      "A": 0.08,
+      "alpha": 0.35,
+      "beta": 3
+    },
+    {
+      "name": "Polimer",
+      "h": 0.001,
+      "theta": 0,
+      "E1": 2000000000.0,
+      "E2": 2000000000.0,
+      "G12": 740740740.7407407,
+      "G13": 740740740.7407407,
+      "G23": 740740740.7407407,
+      "nu12": 0.35,
+      "rho": 1180,
+      "is_visco": true,
+      "A": 0.18,
+      "alpha": 0.35,
+      "beta": 3,
+      "criterion": "von_mises",
+      "strengths": {
+        "yield": 50000000.0
+      }
+    },
+    {
+      "h": 0.0015,
+      "E1": 140000000000.0,
+      "E2": 10000000000.0,
+      "G12": 5000000000.0,
+      "G13": 5000000000.0,
+      "G23": 3000000000.0,
+      "nu12": 0.3,
+      "rho": 1600,
+      "criterion": "max_stress",
+      "strengths": {
+        "Xt": 1200000000.0,
+        "Xc": 800000000.0,
+        "Yt": 50000000.0,
+        "Yc": 150000000.0,
+        "S12": 60000000.0,
+        "S13": 50000000.0,
+        "S23": 40000000.0
+      },
+      "name": "Yuqori -30",
+      "theta": -30,
+      "is_visco": true,
+      "A": 0.04,
+      "alpha": 0.45,
+      "beta": 4
+    }
+  ],
+  "load": {
+    "kind": "pulse",
+    "spatial": "patch",
+    "amplitude": 60,
+    "x": 0.15,
+    "y": 0.1,
+    "patch_width": 0.03,
+    "patch_height": 0.03,
+    "duration": 0.003,
+    "profile": "half_sine"
+  },
+  "simulation": {
+    "total_time": 0.04,
+    "dt": 2e-05,
+    "w0_mm": 0,
+    "v0": 0,
+    "memory_initial": "instantaneous",
+    "kernel_tolerance": 2e-05,
+    "calculate_stress": true,
+    "record_energy": false
+  },
+  "clpt": {
+    "nx": 4,
+    "ny": 4
+  },
+  "_gui_model": "both",
+  "_gui_check_dt": false
+}

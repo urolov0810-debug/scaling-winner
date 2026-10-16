@@ -1,0 +1,8 @@
+.venv/
+dist/
+build/
+installer_output/
+__pycache__/
+*.spec
+*.pyc
+results/
